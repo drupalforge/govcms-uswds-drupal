@@ -7,7 +7,7 @@ set -eu -o pipefail
 cd $APP_ROOT
 
 # Create required composer.json and composer.lock files
-composer create-project --no-install ${PROJECT:=drupal/recommended-project}
+composer create-project --no-install ${PROJECT:=emanaton/govcms-uswds-drupal} --repository="https://github.com/emanaton/govcms-uswds-drupal.git"
 cp -r "${PROJECT#*/}"/* ./
 rm -rf "${PROJECT#*/}" patches.lock.json
 
