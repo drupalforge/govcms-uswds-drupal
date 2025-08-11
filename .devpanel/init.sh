@@ -68,8 +68,69 @@ fi
 echo
 if [ -z "$(drush status --field=db-status)" ]; then
   echo 'Install Drupal.'
-  time drush -n si
+  time drush -n si minimal
 
+  # reset site UUID to what's in the new database
+  local config_file="config/sync/system.site.yml"
+  
+  # Check if the config file exists
+  if [ ! -f "$config_file" ]; then
+      echo "Error: Config file not found: $config_file"
+      return 1
+  fi
+  
+  # Get the current site UUID using drush
+  echo "Getting current site UUID..."
+  local current_uuid=$(drush cget system.site uuid --format=string)
+  
+  echo "Current site UUID: $current_uuid"
+
+  # Get the UUID from the config file
+  local config_uuid=$(grep "^uuid:" "$config_file" | sed 's/uuid: //')
+  echo "Config file UUID: $config_uuid"
+
+  # Check if UUIDs are already the same
+  if [ "$current_uuid" = "$config_uuid" ]; then
+      echo "UUIDs already match. No changes needed."
+  else
+    # Create a backup of the original file
+    cp "$config_file" "${config_file}.backup"
+    echo "Created backup: ${config_file}.backup"
+  
+    # Replace the UUID in the config file
+    sed -i.tmp "s/^uuid: .*/uuid: $current_uuid/" "$config_file"
+    rm "${config_file}.tmp"
+  
+    echo "Updated UUID in $config_file"
+    echo "Old UUID: $config_uuid"
+    echo "New UUID: $current_uuid"
+  
+    # Verify the change
+    local new_config_uuid=$(grep "^uuid:" "$config_file" | sed 's/uuid: //')
+    if [ "$new_config_uuid" = "$current_uuid" ]; then
+        echo "✓ UUID successfully updated in config file"
+    else
+        echo "✗ Error: UUID update failed"
+        return 1
+    fi
+  fi
+
+  # The config_split module requires multiple import runs to fully process configuration splits:
+  drush cr
+  drush cim -y
+  drush cr
+  drush cim -y
+  drush cr
+  drush cim -y
+
+  # compile theme
+  cd web/themes/custom/uswds_extend_custom
+  npm run build
+  cd -
+
+  # install sample content
+  drush en -y govcsm_sample_content
+    
   echo
   echo 'Tell Automatic Updates about patches.'
   drush -n cset --input-format=yaml package_manager.settings additional_trusted_composer_plugins '["cweagans/composer-patches"]'
