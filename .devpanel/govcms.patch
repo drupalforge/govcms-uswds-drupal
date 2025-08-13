@@ -1,0 +1,13 @@
+diff --git a/drush/drush.yml b/drush/drush.yml
+index 85895d0e..29c70b42 100644
+--- a/drush/drush.yml
++++ b/drush/drush.yml
+@@ -32,3 +32,8 @@ command:
+     sync:
+       options:
+         structure-tables-key: 'common'
++  site:
++    install:
++      options:
++        account-pass: admin
++        site-name: GovCMS

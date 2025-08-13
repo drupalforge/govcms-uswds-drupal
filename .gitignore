@@ -8,6 +8,7 @@
 /composer.json
 /composer.lock
 /config/
+/drush/
 /load.environment.php
 /local.env.example
 /logs/*

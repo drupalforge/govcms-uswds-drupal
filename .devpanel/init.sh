@@ -2,7 +2,7 @@
 if [ -n "${DEBUG_SCRIPT:-}" ]; then
   set -x
 fi
-set -eu -o pipefail
+#set -eu -o pipefail
 cd $APP_ROOT
 
 LOG_FILE="logs/init-$(date +%F-%T).log"
@@ -41,7 +41,7 @@ else
   echo
 fi
 # If update fails, change it to install.
-time composer -n update --no-dev --no-progress
+time composer -n install --no-dev --no-progress
 
 #== Create the private files directory.
 if [ ! -d private ]; then
@@ -71,22 +71,22 @@ if [ -z "$(drush status --field=db-status)" ]; then
   time drush -n si minimal
 
   # reset site UUID to what's in the new database
-  local config_file="config/sync/system.site.yml"
+  config_file="config/sync/system.site.yml"
   
   # Check if the config file exists
   if [ ! -f "$config_file" ]; then
       echo "Error: Config file not found: $config_file"
-      return 1
+      exit 1
   fi
   
   # Get the current site UUID using drush
   echo "Getting current site UUID..."
-  local current_uuid=$(drush cget system.site uuid --format=string)
+  current_uuid=$(drush cget system.site uuid --format=string)
   
   echo "Current site UUID: $current_uuid"
 
   # Get the UUID from the config file
-  local config_uuid=$(grep "^uuid:" "$config_file" | sed 's/uuid: //')
+  config_uuid=$(grep "^uuid:" "$config_file" | sed 's/uuid: //')
   echo "Config file UUID: $config_uuid"
 
   # Check if UUIDs are already the same
@@ -106,12 +106,12 @@ if [ -z "$(drush status --field=db-status)" ]; then
     echo "New UUID: $current_uuid"
   
     # Verify the change
-    local new_config_uuid=$(grep "^uuid:" "$config_file" | sed 's/uuid: //')
+    new_config_uuid=$(grep "^uuid:" "$config_file" | sed 's/uuid: //')
     if [ "$new_config_uuid" = "$current_uuid" ]; then
         echo "✓ UUID successfully updated in config file"
     else
         echo "✗ Error: UUID update failed"
-        return 1
+        exit 1
     fi
   fi
 
@@ -130,12 +130,6 @@ if [ -z "$(drush status --field=db-status)" ]; then
 
   # install sample content
   drush en -y govcsm_sample_content
-    
-  echo
-  echo 'Tell Automatic Updates about patches.'
-  drush -n cset --input-format=yaml package_manager.settings additional_trusted_composer_plugins '["cweagans/composer-patches"]'
-  drush -n cset --input-format=yaml package_manager.settings additional_known_files_in_project_root '["patches.json", "patches.lock.json"]'
-  time drush ev '\Drupal::moduleHandler()->invoke("automatic_updates", "modules_installed", [[], FALSE])'
 else
   echo 'Update database.'
   time drush -n updb

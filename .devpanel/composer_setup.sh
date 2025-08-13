@@ -3,7 +3,7 @@
 # pulls composer.json from the Drupal recommended project and customizes it.
 # You do not need this file if your template provides its own composer.json.
 
-set -eu -o pipefail
+#set -eu -o pipefail
 cd $APP_ROOT
 
 # Create required composer.json and composer.lock files
@@ -22,9 +22,12 @@ composer config -jm extra.drupal-scaffold.file-mapping '{
     }
 }'
 composer config scripts.post-drupal-scaffold-cmd \
-    'cd web/sites/default && test -z "$(grep '\''include \$devpanel_settings;'\'' settings.php)" && patch -Np1 -r /dev/null < $APP_ROOT/.devpanel/drupal-settings.patch || :'
+    'cd web/sites/default && mkdir -p files/assets && test -z "$(grep '\''include \$devpanel_settings;'\'' settings.php)" && patch -Np1 -r /dev/null < $APP_ROOT/.devpanel/drupal-settings.patch || :'
 
-# Add Drush and Composer Patches.
-composer require -n --no-update \
-    drush/drush \
-    cweagans/composer-patches:^2@beta
+# Patch drush.yml.
+composer config scripts.pre-install-cmd \
+    'test -z "$(grep '\''site-name: GovCMS'\'' drush/drush.yml)" && patch -Np1 -r /dev/null < .devpanel/govcms.patch || :'
+
+# Update lock file. The only way to do this when some packages rely on the
+# lenient plugin is to require a package that is already required.
+composer require -n --no-install drupal/core-recommended:10.3.13
