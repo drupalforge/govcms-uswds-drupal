@@ -14,14 +14,6 @@ export COMPOSER_NO_AUDIT=1
 # For faster performance, don't install dev dependencies.
 export COMPOSER_NO_DEV=1
 
-# Install VSCode Extensions
-if [ -n "${DP_VSCODE_EXTENSIONS:-}" ]; then
-  IFS=','
-  for value in $DP_VSCODE_EXTENSIONS; do
-    time code-server --install-extension $value
-  done
-fi
-
 #== Remove root-owned files.
 echo
 echo Remove root-owned files.
@@ -55,13 +47,6 @@ if [ ! -d config/sync ]; then
   echo
   echo 'Create the config sync directory.'
   time mkdir -p config/sync
-fi
-
-#== Generate hash salt.
-if [ ! -f .devpanel/salt.txt ]; then
-  echo
-  echo 'Generate hash salt.'
-  time openssl rand -hex 32 > .devpanel/salt.txt
 fi
 
 #== Install Drupal.
